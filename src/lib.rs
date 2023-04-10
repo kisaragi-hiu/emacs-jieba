@@ -17,7 +17,7 @@ fn vec_to_vector<'e, T: IntoLisp<'e>>(env: &'e Env, vec: Vec<T>) -> Result<Vecto
     Ok(vector)
 }
 
-#[emacs::module(name = "jieba")]
+#[emacs::module(name = "jieba-dyn", defun_prefix = "jieba")]
 fn init(_env: &Env) -> Result<()> {
     Ok(())
 }
@@ -35,7 +35,7 @@ fn load() -> Result<()> {
 
 /// Add WORD, its FREQUENCY, and its POS to the current instance of Jieba.
 #[defun]
-fn _add_word(env: &Env, word: String, frequency: Option<usize>, pos: String) -> Result<()> {
+fn _add_word(env: &Env, word: String, pos: String, frequency: Option<usize>) -> Result<()> {
     unsafe {
         if let Some(jieba) = JIEBA.get_mut() {
             jieba.add_word(word.as_str(), frequency, Some(pos.as_str()));
@@ -48,7 +48,7 @@ fn _add_word(env: &Env, word: String, frequency: Option<usize>, pos: String) -> 
 
 /// Cut SENTENCE into tokens.
 #[defun]
-fn cut<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Result<Vector<'e>> {
+fn _cut<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Result<Vector<'e>> {
     unsafe {
         let jieba = JIEBA.get_or_init(Jieba::new);
         let cutted = jieba.cut(sentence.as_str(), hmm.is_some());
@@ -66,7 +66,7 @@ fn cut_all(env: &Env, sentence: String) -> Result<Vector> {
 }
 
 #[defun]
-fn cut_for_search<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Result<Vector<'e>> {
+fn _cut_for_search<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Result<Vector<'e>> {
     unsafe {
         let jieba = JIEBA.get_or_init(Jieba::new);
         let cutted = jieba.cut_for_search(sentence.as_str(), hmm.is_some());
@@ -104,7 +104,7 @@ fn _tokenize<'e>(
 ///
 /// Return results in the format [(WORD . TAG) ...].
 #[defun]
-fn tag<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Result<Vector<'e>> {
+fn _tag<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Result<Vector<'e>> {
     unsafe {
         let jieba = JIEBA.get_or_init(Jieba::new);
         let tagged = jieba.tag(sentence.as_str(), hmm.is_some());
@@ -124,7 +124,7 @@ fn tag<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Result<Vector<
 ///
 /// Return results in the format [(KEYWORD . WEIGHT) ...].
 #[defun]
-fn extract(env: &Env, sentence: String, n: u32, allowed_pos: Option<String>) -> Result<Vector> {
+fn _extract(env: &Env, sentence: String, n: u32, allowed_pos: Option<String>) -> Result<Vector> {
     unsafe {
         let allowed_pos_string = allowed_pos.unwrap_or_else(|| "".to_owned());
 
