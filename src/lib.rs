@@ -71,36 +71,35 @@ fn cut_for_search<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Res
 //         .collect())
 // }
 
-// struct Keyword {
-//     pub keyword: String,
-//     pub weight: f64,
-// }
+/// Extract the top N keywords from SENTENCE.
+/// ALLOWED_POS: a comma-separated list (written as a string) of parts of speech
+/// to consider.
+///
+/// Returns results in the format [(KEYWORD . WEIGHT) ...].
+#[defun]
+fn extract(env: &Env, sentence: String, n: u32, allowed_pos: Option<String>) -> Result<Vector> {
+    let allowed_pos_string = allowed_pos.unwrap_or_else(|| "".to_owned());
 
-// #[defun]
-// fn extract(sentence: String, topn: u32, allowed_pos: Option<String>) -> Result<Vector> {
-//     let allowed_pos_string = allowed_pos.unwrap_or_else(|| "".to_owned());
+    let allowed_pos: Vec<String> = if allowed_pos_string.is_empty() {
+        vec![]
+    } else {
+        allowed_pos_string
+            .split(',')
+            .map(|s| s.to_owned())
+            .collect()
+    };
 
-//     let allowed_pos: Vec<String> = if allowed_pos_string.is_empty() {
-//         vec![]
-//     } else {
-//         allowed_pos_string
-//             .split(',')
-//             .map(|s| s.to_owned())
-//             .collect()
-//     };
+    let keyword_extractor = TFIDF_INSTANCE.get_or_init(|| {
+        let jieba = JIEBA.get_or_init(Jieba::new);
+        TFIDF::new_with_jieba(jieba)
+    });
 
-//     let keyword_extractor = TFIDF_INSTANCE.get_or_init(|| {
-//         let jieba = JIEBA.get_or_init(Jieba::new);
-//         TFIDF::new_with_jieba(jieba)
-//     });
+    let tags = keyword_extractor.extract_tags(sentence.as_str(), n as usize, allowed_pos);
 
-//     let tags = keyword_extractor.extract_tags(sentence.as_str(), topn as usize, allowed_pos);
-
-//     Ok(tags
-//         .into_iter()
-//         .map(|tag| Keyword {
-//             keyword: tag.keyword,
-//             weight: tag.weight,
-//         })
-//         .collect::<Vector>())
-// }
+    let vector = env.make_vector(tags.len(), ())?;
+    for (i, tag) in tags.into_iter().enumerate() {
+        let pair = env.cons(tag.keyword, tag.weight)?;
+        vector.set(i, pair)?;
+    }
+    Ok(vector)
+}
