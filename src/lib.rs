@@ -31,6 +31,19 @@ fn load() -> Result<()> {
     Ok(())
 }
 
+// load-dict
+// with-dict
+
+/// Initialize or refresh the TFIDF instance against the current Jieba instance.
+#[defun]
+fn load_tfidf() -> Result<()> {
+    unsafe {
+        let jieba = JIEBA.get_or_init(Jieba::new);
+        TFIDF_INSTANCE = OnceCell::with_value(TFIDF::new_with_jieba(jieba));
+    }
+    Ok(())
+}
+
 // load_dict: I don't know how to pass a String to a function expecting a BufRead.
 
 /// Add WORD, its FREQUENCY, and its POS to the current instance of Jieba.
@@ -174,3 +187,29 @@ fn _extract_keywords(
     }
     Ok(vector)
 }
+
+#[defun]
+fn tfidf_add_stop_word(env: &Env, word: String) -> Result<()> {
+    unsafe {
+        if let Some(tfidf) = TFIDF_INSTANCE.get_mut() {
+            tfidf.add_stop_word(word);
+        } else {
+            env.message("TFIDF is not yet loaded")?;
+        }
+    }
+    Ok(())
+}
+
+#[defun]
+fn tfidf_remove_stop_word(env: &Env, word: String) -> Result<()> {
+    unsafe {
+        if let Some(tfidf) = TFIDF_INSTANCE.get_mut() {
+            tfidf.remove_stop_word(word.as_str());
+        } else {
+            env.message("TFIDF is not yet loaded")?;
+        }
+    }
+    Ok(())
+}
+
+// TODO: tfidf_set_stop_words
