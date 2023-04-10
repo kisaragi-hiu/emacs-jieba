@@ -30,7 +30,7 @@ fn load() -> Result<()> {
     Ok(())
 }
 
-/// Cut SENTENCE into an array of tokens.
+/// Cut SENTENCE into tokens.
 #[defun]
 fn cut<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Result<Vector<'e>> {
     let jieba = JIEBA.get_or_init(Jieba::new);
@@ -52,30 +52,27 @@ fn cut_for_search<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Res
     vec_to_vector(env, cutted)
 }
 
-// struct TaggedWord {
-//     pub tag: String,
-//     pub word: String,
-// }
+/// Cut SENTENCE into tokens along with parts of speech information.
+///
+/// Return results in the format [(WORD . TAG) ...].
+#[defun]
+fn tag<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Result<Vector<'e>> {
+    let jieba = JIEBA.get_or_init(Jieba::new);
+    let tagged = jieba.tag(sentence.as_str(), hmm.is_some());
 
-// #[defun]
-// fn tag(env: &Env, sentence: String, hmm: Option<Value>) -> Result<Vector> {
-//     let jieba = JIEBA.get_or_init(Jieba::new);
-//     let tagged = jieba.tag(sentence.as_str(), hmm.is_some());
-
-//     Ok(tagged
-//         .iter()
-//         .map(|t| TaggedWord {
-//             tag: t.tag.to_owned(),
-//             word: t.word.to_owned(),
-//         })
-//         .collect())
-// }
+    let vector = env.make_vector(tagged.len(), ())?;
+    for (i, tag) in tagged.iter().enumerate() {
+        let pair = env.cons(tag.word.to_owned(), tag.tag.to_owned())?;
+        vector.set(i, pair)?;
+    }
+    Ok(vector)
+}
 
 /// Extract the top N keywords from SENTENCE.
 /// ALLOWED_POS: a comma-separated list (written as a string) of parts of speech
 /// to consider.
 ///
-/// Returns results in the format [(KEYWORD . WEIGHT) ...].
+/// Return results in the format [(KEYWORD . WEIGHT) ...].
 #[defun]
 fn extract(env: &Env, sentence: String, n: u32, allowed_pos: Option<String>) -> Result<Vector> {
     let allowed_pos_string = allowed_pos.unwrap_or_else(|| "".to_owned());
