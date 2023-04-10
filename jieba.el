@@ -42,7 +42,7 @@ FREQUENCY, if non-nil, gives Jieba more information to work with."
 
 (defun jieba-cut (sentence &optional hmm)
   "Cut SENTENCE into a vector of words.
-HMM: use a different model."
+HMM: enable word discovery."
   (jieba--cut sentence hmm))
 
 ;; jieba-cut-all
@@ -50,12 +50,12 @@ HMM: use a different model."
 (defun jieba-cut-for-search (sentence &optional hmm)
   "Cut SENTENCE into a vector of words for search purposes.
 Overlapping substrings are also returned to aid search engines.
-HMM: use a different model."
+HMM: enable word discovery."
   (jieba--cut sentence hmm))
 
 (defun jieba-tokenize (sentence &optional hmm mode)
   "Tokenize SENTENCE.
-HMM: use a different model
+HMM: enable word discovery.
 MODE: `search' means to use search mode, otherwise use default mode"
   (jieba--tokenize sentence
                    (pcase mode
@@ -66,7 +66,7 @@ MODE: `search' means to use search mode, otherwise use default mode"
 (defun jieba-tag (sentence &optional hmm)
   "Cut SENTENCE into tokens along with parts of speech information.
 
-HMM: use a different model.
+HMM: enable word discovery.
 
 Return results in the format [(WORD . TAG) ...]."
   (jieba--tag sentence hmm))

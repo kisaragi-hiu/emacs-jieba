@@ -1,14 +1,29 @@
 # emacs-jieba
 
-Emacs Lisp bindings for [jieba-rs](jieba-rs).
+Emacs Lisp bindings for [jieba-rs][jieba-rs].
+
+## Status
+
+It works, but you'll have to figure out compiling the Rust library yourself. I haven't set up the build process yet.
 
 ## Thanks
 
-- [emacs-module-rs][https://github.com/ubolonton/emacs-module-rs], which provides binding from Rust to the Emacs dynamic modules support
-- [@node-rs/jieba][https://github.com/napi-rs/node-rs/tree/main/packages/jieba], whose code is the basis for this package
+- [emacs-module-rs](https://github.com/ubolonton/emacs-module-rs), which provides binding from Rust to the Emacs dynamic modules support
+- [@node-rs/jieba](https://github.com/napi-rs/node-rs/tree/main/packages/jieba), whose code is the basis for this package
 - [jieba-rs][jieba-rs], the binding, and [Jieba](https://github.com/fxsjy/jieba), the original
 
 [jieba-rs]: https://github.com/messense/jieba-rs
+
+## Prior Art
+
+Jieba.el kind of counts, although it's more about integrating with [nodejieba](https://github.com/yanyiwu/nodejieba) in order to get word-wise commands to understand Mandarin words.
+
+## Roadmap
+
+- [ ] Support [TextRank](https://docs.rs/jieba-rs/latest/jieba_rs/struct.TextRank.html)
+- [ ] Support suggest_freq
+- [ ] Support `load_dict`, `with_dict` (perhaps by reading a file instead of reading a string passed from Emacs)
+- [ ] Write docs
 
 ## Parts of speech
 
