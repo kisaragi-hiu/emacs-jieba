@@ -1,5 +1,5 @@
 use emacs::{defun, Env, IntoLisp, Result, Value, Vector};
-use jieba_rs::{Jieba, KeywordExtract, TFIDF};
+use jieba_rs::{Jieba, KeywordExtract, TokenizeMode, TFIDF};
 use once_cell::sync::OnceCell;
 
 emacs::plugin_is_GPL_compatible!();
@@ -31,21 +31,17 @@ fn load() -> Result<()> {
     Ok(())
 }
 
+// load_dict: I don't know how to pass a String to a function expecting a BufRead.
+
 /// Add WORD, its FREQUENCY, and its POS to the current instance of Jieba.
 #[defun]
 fn _add_word(env: &Env, word: String, frequency: Option<usize>, pos: String) -> Result<()> {
     unsafe {
-        let jieba = JIEBA.get_mut();
-        match jieba {
-            Some(jieba) => {
-                jieba.add_word(word.as_str(), frequency, Some(pos.as_str()));
-                ()
-            }
-            None => {
-                env.message("Not yet loaded")?;
-                ()
-            }
-        };
+        if let Some(jieba) = JIEBA.get_mut() {
+            jieba.add_word(word.as_str(), frequency, Some(pos.as_str()));
+        } else {
+            env.message("Not yet loaded")?;
+        }
     }
     Ok(())
 }
@@ -75,6 +71,32 @@ fn cut_for_search<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Res
         let jieba = JIEBA.get_or_init(Jieba::new);
         let cutted = jieba.cut_for_search(sentence.as_str(), hmm.is_some());
         vec_to_vector(env, cutted)
+    }
+}
+
+#[defun]
+fn _tokenize<'e>(
+    env: &'e Env,
+    sentence: String,
+    mode: String,
+    hmm: Option<Value>,
+) -> Result<Vector<'e>> {
+    unsafe {
+        let jieba = JIEBA.get_or_init(Jieba::new);
+        let tokens = jieba.tokenize(
+            sentence.as_str(),
+            match mode.as_str() {
+                "search" => TokenizeMode::Search,
+                _ => TokenizeMode::Default,
+            },
+            hmm.is_some(),
+        );
+        let vector = env.make_vector(tokens.len(), ())?;
+        for (i, token) in tokens.into_iter().enumerate() {
+            let item = env.list((token.word, token.start, token.end))?;
+            vector.set(i, item)?;
+        }
+        Ok(vector)
     }
 }
 
