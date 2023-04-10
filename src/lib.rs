@@ -1,5 +1,5 @@
 use emacs::{defun, Env, IntoLisp, Result, Value, Vector};
-use jieba_rs::{Jieba, KeywordExtract, TokenizeMode, TFIDF};
+use jieba_rs::{Jieba, Keyword, KeywordExtract, TokenizeMode, TFIDF};
 use once_cell::sync::OnceCell;
 
 emacs::plugin_is_GPL_compatible!();
@@ -118,13 +118,7 @@ fn _tag<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Result<Vector
     }
 }
 
-/// Extract the top N keywords from SENTENCE.
-/// ALLOWED_POS: a comma-separated list (written as a string) of parts of speech
-/// to consider.
-///
-/// Return results in the format [(KEYWORD . WEIGHT) ...].
-#[defun]
-fn _extract(env: &Env, sentence: String, n: u32, allowed_pos: Option<String>) -> Result<Vector> {
+fn internal_extract(sentence: String, n: u32, allowed_pos: Option<String>) -> Vec<Keyword> {
     unsafe {
         let allowed_pos_string = allowed_pos.unwrap_or_else(|| "".to_owned());
 
@@ -144,11 +138,39 @@ fn _extract(env: &Env, sentence: String, n: u32, allowed_pos: Option<String>) ->
 
         let tags = keyword_extractor.extract_tags(sentence.as_str(), n as usize, allowed_pos);
 
-        let vector = env.make_vector(tags.len(), ())?;
-        for (i, tag) in tags.into_iter().enumerate() {
-            let pair = env.cons(tag.keyword, tag.weight)?;
-            vector.set(i, pair)?;
-        }
-        Ok(vector)
+        tags
     }
+}
+
+/// Extract the top N keywords from SENTENCE.
+/// ALLOWED_POS: a comma-separated list (written as a string) of parts of speech
+/// to consider.
+///
+/// Return results in the format [(KEYWORD . WEIGHT) ...].
+#[defun]
+fn _extract(env: &Env, sentence: String, n: u32, allowed_pos: Option<String>) -> Result<Vector> {
+    let tags = internal_extract(sentence, n, allowed_pos);
+    let vector = env.make_vector(tags.len(), ())?;
+    for (i, tag) in tags.into_iter().enumerate() {
+        let pair = env.cons(tag.keyword, tag.weight)?;
+        vector.set(i, pair)?;
+    }
+    Ok(vector)
+}
+
+/// Extract the top N keywords from SENTENCE.
+/// Like `jieba-extract', but weights are discarded.
+#[defun]
+fn _extract_keywords(
+    env: &Env,
+    sentence: String,
+    n: u32,
+    allowed_pos: Option<String>,
+) -> Result<Vector> {
+    let tags = internal_extract(sentence, n, allowed_pos);
+    let vector = env.make_vector(tags.len(), ())?;
+    for (i, tag) in tags.into_iter().enumerate() {
+        vector.set(i, tag.keyword)?;
+    }
+    Ok(vector)
 }

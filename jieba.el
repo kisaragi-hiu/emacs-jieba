@@ -53,14 +53,14 @@ Overlapping substrings are also returned to aid search engines.
 HMM: use a different model."
   (jieba--cut sentence hmm))
 
-(defun jieba-tokenize (sentence &optional mode hmm)
+(defun jieba-tokenize (sentence &optional hmm mode)
   "Tokenize SENTENCE.
-MODE: `search' means to use search mode, otherwise use default mode
-HMM: use a different model"
+HMM: use a different model
+MODE: `search' means to use search mode, otherwise use default mode"
   (jieba--tokenize sentence
                    (pcase mode
                      ('search "search")
-                     (_ nil))
+                     (_ "default"))
                    hmm))
 
 (defun jieba-tag (sentence &optional hmm)
@@ -76,6 +76,13 @@ Return results in the format [(WORD . TAG) ...]."
 ALLOWED-POS is a comma-separated list of POS specifiers. If nil,
 Jieba's default is used."
   (jieba--extract sentence n allowed-pos))
+
+(defun jieba-extract-keywords (sentence n &optional allowed-pos)
+  "Extract the top N keywords from SENTENCE.
+Like `jieba-extract', but weights are discarded.
+ALLOWED-POS is a comma-separated list of POS specifiers. If nil,
+Jieba's default is used."
+  (jieba--extract-keywords sentence n allowed-pos))
 
 (provide 'jieba)
 
