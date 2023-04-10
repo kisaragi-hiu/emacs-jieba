@@ -1,8 +1,13 @@
 [package]
+authors = ["Kisaragi Hiu <mail@kisaragi-hiu.com>"]
 edition = "2018"
+name = "emacs-jieba"
+version = "0.0.1"
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
 emacs = "0.18"
+jieba-rs = { version = "0.6", features = ["default-dict", "tfidf", "textrank"] }
+once_cell = "1"
