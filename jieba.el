@@ -3,10 +3,9 @@
 ;; Author: Kisaragi Hiu
 ;; Maintainer: Kisaragi Hiu
 ;; Version: 0.0.1
-;; Package-Requires: ((emacs "25.1"))
+;; Package-Requires: ((emacs "25.1") (dash "2.19.1"))
 ;; Homepage: https://github.com/kisaragi-hiu/emacs-jieba
 ;; Keywords: extensions
-
 
 ;; This file is not part of GNU Emacs
 

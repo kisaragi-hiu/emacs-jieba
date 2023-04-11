@@ -20,6 +20,8 @@ Jieba.el kind of counts, although it's more about integrating with [nodejieba](h
 
 ## Roadmap
 
+- [ ] Set up build → GitHub release
+- [ ] Auto download without compilation
 - [ ] Support [TextRank](https://docs.rs/jieba-rs/latest/jieba_rs/struct.TextRank.html)
 - [ ] Support suggest_freq
 - [ ] Support `load_dict`, `with_dict` (perhaps by reading a file instead of reading a string passed from Emacs)
