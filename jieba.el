@@ -48,7 +48,8 @@ This needs to be set before `jieba' is loaded."
   :group 'jieba
   :type 'directory)
 
-(defcustom jieba-dyn-get-method (list "todo" 'compile)
+(defcustom jieba-dyn-get-method (cond (noninteractive nil)
+                                      (t (list "todo" 'compile)))
   "How to get the dynamic module for jieba, if necessary.
 
 This needs to be set before `jieba' is loaded.
@@ -90,8 +91,16 @@ BODY needs to take care of deleting `tmp-dir' itself."
   "Download the built dynamic module from URL."
   nil)
 
-(defun jieba--dyn-build ()
-  "Build the dynamic library."
+(defun jieba--dyn-build (&optional target)
+  "Build the dynamic library.
+When TARGET is non-nil, try to cross-build for TARGET.
+When the \"jieba_target\" environment variable is set, use that
+as TARGET instead.
+
+Note that currently TARGET needs to be the same operating system
+as the host."
+  (when (getenv "jieba_target")
+    (setq target (getenv "jieba_target")))
   (jieba--with-temp-dir
     (copy-directory "." tmp-dir nil t)
     (let ((default-directory tmp-dir)
@@ -126,7 +135,9 @@ BODY needs to take care of deleting `tmp-dir' itself."
                :stderr pipe
                :command `("cargo" "build" "-r"
                           "--color" "always"
-                          "--message-format" "json")
+                          "--message-format" "json"
+                          ,@(when target
+                              `(("--target" ,target))))
                :sentinel (lambda (process _change)
                            (when (eq 'exit (process-status process))
                              (message "Compiled %s" output-file)
