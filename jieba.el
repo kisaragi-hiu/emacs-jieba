@@ -107,9 +107,12 @@ BODY needs to take care of deleting `tmp-dir' itself."
         :buffer nil
         :filter (lambda (_process output)
                   (with-current-buffer buf
-                    (let ((inhibit-read-only t))
+                    (let ((inhibit-read-only t)
+                          (output (ansi-color-apply (format "%s" output))))
                       (goto-char (point-max))
-                      (insert (ansi-color-apply (format "%s" output))))))
+                      (if noninteractive
+                          (princ output)
+                        (insert output)))))
         :sentinel (lambda (process _change)
                     (when (eq 'closed (process-status process))
                       (kill-buffer buf)))))
