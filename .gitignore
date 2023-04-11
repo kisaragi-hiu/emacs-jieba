@@ -1,5 +1,5 @@
 /target
-/.eask
+/.cask
 *.so
 *.dll
 *.dylib

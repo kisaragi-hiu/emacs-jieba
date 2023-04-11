@@ -6,5 +6,5 @@ test: build
 	emacs test.el
 
 test-require-directly:
-	eask install-deps
-	eask emacs --batch tests/require-directly.el
+	cask install
+	cask emacs --batch tests/require-directly.el
