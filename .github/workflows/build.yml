@@ -35,7 +35,13 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: |
-          cargo install cross
+          # Install not-yet-released Cross for Android builds
+          # https://github.com/cross-rs/cross/issues/1222
+          # Essentially
+          # - Rust 1.68 bumped the Android NDK version
+          # - Cross needs to be updated to address that, and has been, but the fix hasn't made its
+          #   way to a release
+          cargo install cross --git "https://github.com/cross-rs/cross" --branch main
           rustup target add "$TARGET"
           cross build --target "$TARGET" --release
       - name: Build without Cross
