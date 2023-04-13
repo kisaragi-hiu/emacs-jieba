@@ -42,7 +42,7 @@ jobs:
         env:
           TARGET: ${{ matrix.target }}
         run: |
-          rustup targets add "$TARGET"
+          rustup target add "$TARGET"
           cargo build --target "$TARGET" --release
       - uses: actions/upload-artifact@v3
         with:
