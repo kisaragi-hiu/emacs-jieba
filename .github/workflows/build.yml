@@ -36,6 +36,7 @@ jobs:
           TARGET: ${{ matrix.target }}
         run: |
           cargo install cross
+          rustup target add "$TARGET"
           cross build --target "$TARGET" --release
       - name: Build without Cross
         if: ${{ matrix.os }}
