@@ -4,13 +4,13 @@ name: Build
 # https://github.com/emacs-tree-sitter/elisp-tree-sitter/blob/master/.github/workflows/release.yml
 
 on:
-  # push:
-  #   tags:
-  #     - "v*.*.*"
+  push:
+    tags:
+      - "v*.*.*"
   workflow_dispatch:
 
 jobs:
-  Release:
+  Build:
     name: Build for ${{ matrix.target }}
     runs-on: ${{ matrix.os || 'ubuntu-22.04' }}
     strategy:
@@ -64,6 +64,27 @@ jobs:
             target/${{ matrix.target }}/release/*.so
             target/${{ matrix.target }}/release/*.dylib
             target/${{ matrix.target }}/release/*.dll
+
+  Release:
+    needs: Build
+    runs-on: ubuntu-22.04
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: artifact
+      - run: ls -R
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          generate_release_notes: true
+          files: |
+            *.so
+            *.dylib
+            *.dll
 # Possibly reasonable Cross targets:
 # aarch64-linux-android
 # aarch64-unknown-linux-gnu
