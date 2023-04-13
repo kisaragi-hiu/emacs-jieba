@@ -24,7 +24,7 @@ jobs:
           - os: macos-11
             target: aarch64-apple-darwin
           - os: macos-11
-            target: aarch64-apple-darwin
+            target: x86_64-apple-darwin
     steps:
       - uses: actions/checkout@v3
       - name: Set up Rust
