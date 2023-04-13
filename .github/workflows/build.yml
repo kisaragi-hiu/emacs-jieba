@@ -11,7 +11,7 @@ on:
 
 jobs:
   Release:
-    name: Release ${{ github.ref_name }}
+    name: Build for ${{ matrix.target }}
     runs-on: ${{ matrix.os || 'ubuntu-22.04' }}
     strategy:
       fail-fast: false
