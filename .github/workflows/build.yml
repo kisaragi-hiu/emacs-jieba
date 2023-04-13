@@ -47,7 +47,7 @@ jobs:
       - uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.target }}
-          path: "target/${{ matrix.target }}/*jieba*"
+          path: "target/${{ matrix.target }}/release/*jieba*"
 # Possibly reasonable Cross targets:
 # aarch64-linux-android
 # aarch64-unknown-linux-gnu
