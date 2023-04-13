@@ -25,6 +25,8 @@ jobs:
             target: aarch64-apple-darwin
           - os: macos-11
             target: x86_64-apple-darwin
+    env:
+      TARGET: ${{ matrix.target }}
     steps:
       - uses: actions/checkout@v3
       - name: Set up Rust
@@ -32,8 +34,6 @@ jobs:
           rustup install stable
       - name: Build with Cross
         if: ${{ !matrix.os }}
-        env:
-          TARGET: ${{ matrix.target }}
         run: |
           # Install not-yet-released Cross for Android builds
           # https://github.com/cross-rs/cross/issues/1222
@@ -46,8 +46,6 @@ jobs:
           cross build --target "$TARGET" --release
       - name: Build without Cross
         if: ${{ matrix.os }}
-        env:
-          TARGET: ${{ matrix.target }}
         run: |
           rustup target add "$TARGET"
           cargo build --target "$TARGET" --release
@@ -85,6 +83,7 @@ jobs:
             *.so
             *.dylib
             *.dll
+
 # Possibly reasonable Cross targets:
 # aarch64-linux-android
 # aarch64-unknown-linux-gnu
