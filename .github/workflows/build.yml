@@ -51,10 +51,19 @@ jobs:
         run: |
           rustup target add "$TARGET"
           cargo build --target "$TARGET" --release
+      - name: Rename result
+        run: |
+          npm install -g renamer
+          renamer --path-element name -f "/.*/" -r "$TARGET" target/"$TARGET"/release/*.{so,dylib,dll}
       - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.target }}
-          path: "target/${{ matrix.target }}/release/*jieba*"
+          # An artifact is like a bucket, and this is how you upload multiple files from multiple
+          # jobs into the same artifact (using the same name).
+          name: artifact
+          path: |
+            target/${{ matrix.target }}/release/*.so
+            target/${{ matrix.target }}/release/*.dylib
+            target/${{ matrix.target }}/release/*.dll
 # Possibly reasonable Cross targets:
 # aarch64-linux-android
 # aarch64-unknown-linux-gnu
