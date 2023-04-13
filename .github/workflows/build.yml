@@ -60,7 +60,7 @@ jobs:
             -execdir \
               renamer --path-element name \
                 -f "/.*/" -r "$TARGET" \
-                '{}' '+'
+                '{}' ';'
       - uses: actions/upload-artifact@v3
         with:
           # An artifact is like a bucket, and this is how you upload multiple files from multiple
