@@ -4,7 +4,11 @@ Emacs Lisp bindings for [jieba-rs][jieba-rs].
 
 ## Status
 
-It works, but you'll have to figure out compiling the Rust library yourself. I haven't set up the build process yet.
+It works, but only the default dictionary is available.
+
+If the Rust toolchain (including Cargo) is available, the library will be built automatically.
+
+I'm still figuring out how to build and release binaries for multiple platforms; auto download also isn't here yet.
 
 ## Thanks
 
