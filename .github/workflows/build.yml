@@ -52,10 +52,15 @@ jobs:
       - name: Rename result
         run: |
           npm install -g renamer
-          for f in target/"$TARGET"/release/*.{so,dylib,dll}
-          do
-            renamer --path-element name -f "/.*/" -r "$TARGET" "$f"
-          done
+          find target/"$TARGET"/release \
+            -maxdepth 1 -type f \
+            \( -name "*.so" \
+               -or -name "*.dylib" \
+               -or -name "*.dll" \) \
+            -execdir \
+              renamer --path-element name \
+                -f "/.*/" -r "$TARGET" \
+                '{}' '+'
       - uses: actions/upload-artifact@v3
         with:
           # An artifact is like a bucket, and this is how you upload multiple files from multiple
