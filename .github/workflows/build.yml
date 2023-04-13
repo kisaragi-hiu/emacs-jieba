@@ -1,0 +1,86 @@
+name: Build
+
+# Thanks
+# https://github.com/emacs-tree-sitter/elisp-tree-sitter/blob/master/.github/workflows/release.yml
+
+on:
+  # push:
+  #   tags:
+  #     - "v*.*.*"
+  workflow_dispatch:
+
+jobs:
+  Release:
+    name: Release ${{ github.ref_name }}
+    runs-on: ${{ matrix.os || 'ubuntu-22.04' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - aarch64-linux-android
+          - x86_64-unknown-linux-gnu
+          - x86_64-pc-windows-gnu
+        include:
+          - os: macos-11
+            target: aarch64-apple-darwin
+          - os: macos-11
+            target: aarch64-apple-darwin
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Rust
+        run: |
+          rustup install stable
+      - name: Build with Cross
+        if: ${{ !matrix.os }}
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          cargo install cross
+          cross build --target "$TARGET" --release
+      - name: Build without Cross
+        if: ${{ matrix.os }}
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          rustup targets add "$TARGET"
+          cargo build --target "$TARGET" --release
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.target }}
+          path: path/to/artifact/world.txt
+# Possibly reasonable Cross targets:
+# aarch64-linux-android
+# aarch64-unknown-linux-gnu
+# aarch64-unknown-linux-musl
+# armv7-linux-androideabi
+# armv7-unknown-linux-gnueabi
+# armv7-unknown-linux-gnueabihf
+# armv7-unknown-linux-musleabi
+# armv7-unknown-linux-musleabihf
+# i686-pc-windows-gnu
+# i686-unknown-linux-gnu
+# mips-unknown-linux-gnu
+# mips-unknown-linux-musl
+# mips64-unknown-linux-gnuabi64
+# mips64-unknown-linux-muslabi64
+# mips64el-unknown-linux-gnuabi64
+# mips64el-unknown-linux-muslabi64
+# mipsel-unknown-linux-gnu
+# mipsel-unknown-linux-musl
+# powerpc-unknown-linux-gnu
+# powerpc64-unknown-linux-gnu
+# powerpc64le-unknown-linux-gnu
+# riscv64gc-unknown-linux-gnu
+# s390x-unknown-linux-gnu
+# sparc64-unknown-linux-gnu
+# sparcv9-sun-solaris
+# thumbv7neon-linux-androideabi
+# thumbv7neon-unknown-linux-gnueabihf
+# x86_64-linux-android
+# x86_64-pc-windows-gnu
+# x86_64-sun-solaris
+# x86_64-unknown-freebsd
+# x86_64-unknown-illumos
+# x86_64-unknown-linux-gnu
+# x86_64-unknown-linux-musl
+# x86_64-unknown-netbsd
