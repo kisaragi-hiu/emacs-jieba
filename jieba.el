@@ -231,7 +231,19 @@ as the host."
 
 (require 'jieba-dyn)
 
-;; jieba-load
+(defun jieba-reset (&optional dict)
+  "Reset the Jieba instance.
+If DICT is nil, use the default dictionary.
+If DICT is `empty', use an empty dictionary.
+Otherwise, use DICT as the dictionary. This is equivalent to
+creating an empty instance yourself and using `jieba-load' to
+load DICT into the instance."
+  (pcase dict
+    (`empty (jieba--reset-empty))
+    (`nil (jieba--reset-default))
+    (_ (progn
+         (jieba--reset-empty)
+         (jieba-load-dict dict)))))
 
 (defun jieba-add-word (word &optional pos frequency)
   "Add WORD to the current Jieba instance's dictionary.

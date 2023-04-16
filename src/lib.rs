@@ -1,5 +1,7 @@
 #![allow(non_snake_case)]
 
+use std::io::BufReader;
+
 use emacs::{defun, Env, IntoLisp, Result, Value, Vector};
 use jieba_rs::{Jieba, Keyword, KeywordExtract, TokenizeMode, TFIDF};
 use once_cell::sync::Lazy;
@@ -24,15 +26,32 @@ fn init(_env: &Env) -> Result<()> {
     Ok(())
 }
 
-/// Initialize or reset the Jieba instance.
+/// Reset the Jieba instance to the default dictionary.
 #[defun]
-fn load() -> Result<()> {
-    unsafe { JIEBA = Lazy::new(|| Jieba::new()) }
+fn _reset_default() -> Result<()> {
+    unsafe {
+        JIEBA = Lazy::new(|| Jieba::new());
+    }
     Ok(())
 }
 
-// load-dict
-// with-dict
+#[defun]
+fn _reset_empty() -> Result<()> {
+    unsafe {
+        JIEBA = Lazy::new(|| Jieba::empty());
+    }
+    Ok(())
+}
+
+/// Load DICT, as a string, into the current instance.
+#[defun]
+fn load_dict(dict: String) -> Result<()> {
+    let mut buf = BufReader::new(dict.as_bytes());
+    unsafe {
+        JIEBA.load_dict(&mut buf)?;
+    }
+    Ok(())
+}
 
 /// Initialize or refresh the TFIDF instance against the current Jieba instance.
 #[defun]
