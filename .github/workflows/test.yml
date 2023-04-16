@@ -50,4 +50,4 @@ jobs:
       - name: Setup Cask
         uses: cask/setup-cask@v1.1
       - run: |
-          make test-require-directly
+          make test
