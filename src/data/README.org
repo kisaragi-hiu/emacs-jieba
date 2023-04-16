@@ -1,0 +1,3 @@
+* Extra dictionary data
+
+=jieba-rs= already has [[https://github.com/messense/jieba-rs/tree/main/src/data][a bundled default dictionary]], but it does not work well with Traditional Chinese text. The original Jieba has a [[https://github.com/fxsjy/jieba/tree/master/extra_dict][dict.txt.big]] that works somewhat better, which is included here.
