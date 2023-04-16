@@ -281,7 +281,9 @@ Jieba's default is used."
 Like `jieba-extract', but weights are discarded.
 ALLOWED-POS is a comma-separated list of POS specifiers. If nil,
 Jieba's default is used."
-  (jieba--extract-keywords sentence n allowed-pos))
+  (append
+   (jieba--extract-keywords sentence n allowed-pos)
+   nil))
 
 (provide 'jieba)
 
