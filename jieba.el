@@ -202,11 +202,6 @@ as the host."
                           "--message-format" "json"
                           ,@(when target
                               `(("--target" ,target))))
-               :sentinel (lambda (process _change)
-                           (when (eq 'exit (process-status process))
-                             (message "Compiled %s" output-file)
-                             (kill-buffer json-buf)
-                             (delete-directory tmp-dir t)))
                :filter
                (lambda (_process output)
                  (with-current-buffer json-buf
@@ -227,7 +222,10 @@ as the host."
                               :ok)))))
         ;; Block until it's done.
         (while (accept-process-output process)
-          (redisplay))))))
+          (redisplay))
+        (message "Compiled %s" output-file)
+        (kill-buffer json-buf)
+        (delete-directory tmp-dir t)))))
 
 (jieba--dyn-get-ensure)
 
