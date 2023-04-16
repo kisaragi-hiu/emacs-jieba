@@ -48,20 +48,31 @@ This needs to be set before `jieba' is loaded."
   :group 'jieba
   :type 'directory)
 
-(defcustom jieba-dyn-get-method (list "todo" 'compile)
+(defcustom jieba-dyn-get-method '(download compile)
   "How to get the dynamic module for jieba, if necessary.
 
 This needs to be set before `jieba' is loaded.
 
-A string means to download it from this URL.
+The symbol `download' means to download it from a URL.
 
 The symbol `compile' means to automatically compile it with a
 local Rust toolchain."
   :group 'jieba
-  :type '(set (choice
-               (const :tag "Binary from GitHub" "todo")
-               (string :tag "Another URL"))
-              (const :tag "Local compilation" 'compile)))
+  :type '(set
+          (const :tag "Download from `jieba-dyn-url'" 'download)
+          (const :tag "Local compilation" 'compile)))
+
+(defcustom jieba-dyn-url
+  "https://github.com/kisaragi-hiu/emacs-jieba/releases/download/v%s/%s%s"
+  "The URL of the binary when using the `download' method.
+Should contain three placeholders (\"%s\"), which are replaced
+with the version, the host triple, and the module suffix."
+  :group 'jieba
+  :type 'string)
+
+(defconst jieba--dyn-version "0.0.1"
+  "The version of the dynamic library.
+Only used in auto download mode.")
 
 (defmacro jieba--with-temp-dir (&rest body)
   "BODY with `tmp-dir' bound to a new temporary directory.
@@ -74,9 +85,9 @@ BODY needs to take care of deleting `tmp-dir' itself."
   "Ensure `jieba-dyn' is available by downloading it or building it."
   (let ((load-path (cons jieba-dyn-dir load-path)))
     (unless (locate-library "jieba-dyn")
-      (or (and (-some #'stringp jieba-dyn-get-method)
+      (or (and (memq 'download jieba-dyn-get-method)
                (jieba--dyn-download
-                (-first #'stringp jieba-dyn-get-method)))
+                jieba-dyn-url))
           (and (memq 'compile jieba-dyn-get-method)
                (jieba--dyn-build)))
       ;; The library should be available now. If not, signal.
@@ -110,50 +121,31 @@ BODY needs to take care of deleting `tmp-dir' itself."
       (buffer-substring-no-properties
        (point) (line-end-position))))))
 
-system-configuration
+(defun jieba--dyn-download (url)
+  "Download the built dynamic module from URL.
+URL should have three placeholders: the version, the triple, and
+the module suffix."
+  (-when-let* ((triple (jieba--dyn-download--triple))
+               (remote-path (format url
+                                    jieba--dyn-version
+                                    triple
+                                    module-file-suffix))
+               (local-path (jieba--dyn-get-local-path)))
+    (message "Downloading %s as %s..."
+             (file-name-nondirectory remote-path)
+             (file-name-nondirectory local-path))
+    (with-current-buffer (url-retrieve-synchronously remote-path :silent)
+      (goto-char (point-min))
+      (eww-parse-headers)
+      (write-region (point) (point-max) local-path))
+    (message "Downloading %s as %s...done"
+             (file-name-nondirectory remote-path)
+             (file-name-nondirectory local-path))))
 
-system-type
-
-(defun jieba--dyn-download--triple--uname--os (uname-output)
-  "Return OS from UNAME-OUTPUT."
-  (cl-block nil
-    (pcase-dolist (`(,code . ,needles)
-                   '(("windows")
-                     ("android")
-                     ("linux" "Linux")
-                     ("darwin" "Darwin")
-                     ("freebsd" "FreeBSD")
-                     ("openbsd" "OpenBSD")
-                     ("netbsd" "NetBSD")
-                     ("dragonfly" "DragonFly")))
-      (when (--any? (string-match it uname-output) needles)
-        (cl-return code)))
-    (warn "uname does not contain a known OS")
-    (cl-return "unknown")))
-(defun jieba--dyn-download--triple--uname--architecture (uname-output)
-  "Return architecture from UNAME-OUTPUT."
-  (cl-block nil
-    (pcase-dolist (`(,code . ,needle)
-                   '(("arm" "arm")
-                     ("armv7" "armv7l")
-                     ("armv8" "armv8l")
-                     ("aarch64" "aarch64" "arm64")
-                     ("i686" "i686")
-                     ("x86_64" "x86_64")
-                     ("mips" "mips")
-                     ("mips64" "mips64")
-                     ("powerpc" "powerpc")
-                     ("powerpc64" "powerpc64")))
-      (when (string-match needle uname-output)
-        (cl-return code)))
-    (warn "uname does not contain a known architecture")
-    (cl-return "unknown")))
-
-(jieba--dyn-download--triple)
-
-(defun jieba--dyn-download (_url)
-  "Download the built dynamic module from URL."
-  nil)
+(defun jieba--dyn-get-local-path ()
+  "Return where the `jieba-dyn' module should be."
+  (expand-file-name (concat "jieba-dyn" module-file-suffix)
+                    jieba-dyn-dir))
 
 (defun jieba--dyn-build (&optional target)
   "Build the dynamic library.
@@ -191,8 +183,7 @@ as the host."
                     (when (eq 'closed (process-status process))
                       (kill-buffer buf)))))
       (let ((json-buf (generate-new-buffer " *json*"))
-            (output-file (expand-file-name (concat "jieba-dyn" module-file-suffix)
-                                           jieba-dyn-dir))
+            (output-file (jieba--dyn-get-local-path))
             process
             cargo-output-file)
         (setq process
