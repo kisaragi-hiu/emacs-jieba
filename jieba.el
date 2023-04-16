@@ -25,7 +25,7 @@
 
 ;;; Commentary:
 
-;; commentary
+;; Emacs Lisp bindings for jieba-rs.
 
 ;;; Code:
 
@@ -48,8 +48,7 @@ This needs to be set before `jieba' is loaded."
   :group 'jieba
   :type 'directory)
 
-(defcustom jieba-dyn-get-method (cond (noninteractive nil)
-                                      (t (list "todo" 'compile)))
+(defcustom jieba-dyn-get-method (list "todo" 'compile)
   "How to get the dynamic module for jieba, if necessary.
 
 This needs to be set before `jieba' is loaded.
@@ -86,6 +85,73 @@ BODY needs to take care of deleting `tmp-dir' itself."
       (unless (locate-library "jieba-dyn")
         (error "Could not ensure `jieba-dyn' is available")))
     t))
+
+(defun jieba--dyn-download--triple ()
+  "Get the triple representing the current system."
+  (with-temp-buffer
+    (cond
+     ((equal system-configuration "x86_64-unknown-linux-gnu")
+      system-configuration)
+     ((equal system-configuration "aarch64-unknown-linux-android")
+      "aarch64-linux-android")
+     ((eq system-type 'windows-nt)
+      (when (stringp system-configuration)
+        (and (string-match "x86_64" system-configuration)
+             "x86_64-pc-windows-gnu")))
+     ((eq system-type 'darwin)
+      (when (stringp system-configuration)
+        (or (and (string-match "x86_64" system-configuration)
+                 "x86_64-apple-darwin")
+            (and (string-match "aarch64" system-configuration)
+                 "aarch64-apple-darwin"))))
+     ((executable-find "rustc")
+      (save-excursion
+        (call-process "rustc" nil '(t nil) nil "-Vv"))
+      (save-match-data
+        (search-forward "host: " nil t))
+      (buffer-substring-no-properties
+       (point) (line-end-position))))))
+
+system-configuration
+
+system-type
+
+(defun jieba--dyn-download--triple--uname--os (uname-output)
+  "Return OS from UNAME-OUTPUT."
+  (cl-block nil
+    (pcase-dolist (`(,code . ,needles)
+                   '(("windows")
+                     ("android")
+                     ("linux" "Linux")
+                     ("darwin" "Darwin")
+                     ("freebsd" "FreeBSD")
+                     ("openbsd" "OpenBSD")
+                     ("netbsd" "NetBSD")
+                     ("dragonfly" "DragonFly")))
+      (when (--any? (string-match it uname-output) needles)
+        (cl-return code)))
+    (warn "uname does not contain a known OS")
+    (cl-return "unknown")))
+(defun jieba--dyn-download--triple--uname--architecture (uname-output)
+  "Return architecture from UNAME-OUTPUT."
+  (cl-block nil
+    (pcase-dolist (`(,code . ,needle)
+                   '(("arm" "arm")
+                     ("armv7" "armv7l")
+                     ("armv8" "armv8l")
+                     ("aarch64" "aarch64" "arm64")
+                     ("i686" "i686")
+                     ("x86_64" "x86_64")
+                     ("mips" "mips")
+                     ("mips64" "mips64")
+                     ("powerpc" "powerpc")
+                     ("powerpc64" "powerpc64")))
+      (when (string-match needle uname-output)
+        (cl-return code)))
+    (warn "uname does not contain a known architecture")
+    (cl-return "unknown")))
+
+(jieba--dyn-download--triple)
 
 (defun jieba--dyn-download (_url)
   "Download the built dynamic module from URL."
