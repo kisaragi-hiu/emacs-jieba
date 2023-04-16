@@ -2,7 +2,7 @@
 
 ;; Author: Kisaragi Hiu
 ;; Maintainer: Kisaragi Hiu
-;; Version: 0.0.1
+;; Version: 0.0.2
 ;; Package-Requires: ((emacs "25.1") (dash "2.19.1"))
 ;; Homepage: https://github.com/kisaragi-hiu/emacs-jieba
 ;; Keywords: extensions
@@ -70,7 +70,7 @@ with the version, the host triple, and the module suffix."
   :group 'jieba
   :type 'string)
 
-(defconst jieba--dyn-version "0.0.1"
+(defconst jieba--dyn-version "0.0.2"
   "The version of the dynamic library.
 Only used in auto download mode.")
 
