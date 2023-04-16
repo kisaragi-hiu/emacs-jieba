@@ -50,6 +50,12 @@
     (expect
      (jieba-extract-keywords test:sample-1 5)
      :to-equal
-     '("稍微" "往前" "地下"))))
+     '("稍微" "往前" "地下")))
+  (it "can load the big dictionary"
+    (jieba-reset 'big)
+    (expect
+     (jieba-cut test:sample-1)
+     :to-equal
+     ["軌道" "逐漸" "往" "下" "，" "進" "到" "地下" "的" "區間" "。" "還" "沒有" "電車" "通過" "。" "稍微" "再" "往前" "會" "有" "一個" "站" "，" "我們" "朝" "著" "那" "裡" "輕聲" "前進" "。"])))
 
 (buttercup-run)
