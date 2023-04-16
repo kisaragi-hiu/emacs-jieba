@@ -72,8 +72,6 @@ BODY needs to take care of deleting `tmp-dir' itself."
 
 (defun jieba--dyn-get-ensure ()
   "Ensure `jieba-dyn' is available by downloading it or building it."
-  (unless (executable-find "cargo")
-    (error "Rust toolchain is not available. Make sure `cargo' is in your path"))
   (let ((load-path (cons jieba-dyn-dir load-path)))
     (unless (locate-library "jieba-dyn")
       (or (and (-some #'stringp jieba-dyn-get-method)
@@ -165,6 +163,8 @@ as TARGET instead.
 
 Note that currently TARGET needs to be the same operating system
 as the host."
+  (unless (executable-find "cargo")
+    (error "Rust toolchain is not available. Make sure `cargo' is in your path"))
   (when (getenv "jieba_target")
     (setq target (getenv "jieba_target")))
   (jieba--with-temp-dir
