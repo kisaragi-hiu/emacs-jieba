@@ -135,8 +135,15 @@ the module suffix."
              (file-name-nondirectory remote-path)
              (file-name-nondirectory local-path))
     (with-current-buffer (url-retrieve-synchronously remote-path :silent)
-      (goto-char (point-min))
-      (eww-parse-headers)
+      ;; Skip headers
+      ;; Extracted from `eww-parse-headers'
+      (progn
+        (goto-char (point-min))
+        (while (and (not (eobp))
+                    (not (eolp)))
+          (forward-line 1))
+        (unless (eobp)
+          (forward-line 1)))
       (write-region (point) (point-max) local-path))
     (message "Downloading %s as %s...done"
              (file-name-nondirectory remote-path)
