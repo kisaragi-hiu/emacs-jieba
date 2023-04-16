@@ -1,11 +1,13 @@
+#![allow(non_snake_case)]
+
 use emacs::{defun, Env, IntoLisp, Result, Value, Vector};
 use jieba_rs::{Jieba, Keyword, KeywordExtract, TokenizeMode, TFIDF};
-use once_cell::sync::OnceCell;
+use once_cell::sync::Lazy;
 
 emacs::plugin_is_GPL_compatible!();
 
-static mut JIEBA: OnceCell<Jieba> = OnceCell::new();
-static mut TFIDF_INSTANCE: OnceCell<TFIDF> = OnceCell::new();
+static mut JIEBA: Lazy<Jieba> = Lazy::new(|| Jieba::new());
+static mut TFIDF_INSTANCE: Lazy<TFIDF> = Lazy::new(|| unsafe { TFIDF::new_with_jieba(&JIEBA) });
 
 // From emacs-tree-sitter
 // https://github.com/emacs-tree-sitter/elisp-tree-sitter/blob/master/core/src/query.rs#L13
@@ -25,9 +27,7 @@ fn init(_env: &Env) -> Result<()> {
 /// Initialize or reset the Jieba instance.
 #[defun]
 fn load() -> Result<()> {
-    unsafe {
-        JIEBA = OnceCell::with_value(Jieba::new());
-    }
+    unsafe { JIEBA = Lazy::new(|| Jieba::new()) }
     Ok(())
 }
 
@@ -38,8 +38,7 @@ fn load() -> Result<()> {
 #[defun]
 fn load_tfidf() -> Result<()> {
     unsafe {
-        let jieba = JIEBA.get_or_init(Jieba::new);
-        TFIDF_INSTANCE = OnceCell::with_value(TFIDF::new_with_jieba(jieba));
+        TFIDF_INSTANCE = Lazy::new(|| TFIDF::new_with_jieba(&JIEBA));
     }
     Ok(())
 }
@@ -48,13 +47,9 @@ fn load_tfidf() -> Result<()> {
 
 /// Add WORD, its FREQUENCY, and its POS to the current instance of Jieba.
 #[defun]
-fn _add_word(env: &Env, word: String, pos: String, frequency: Option<usize>) -> Result<()> {
+fn _add_word(word: String, pos: String, frequency: Option<usize>) -> Result<()> {
     unsafe {
-        if let Some(jieba) = JIEBA.get_mut() {
-            jieba.add_word(word.as_str(), frequency, Some(pos.as_str()));
-        } else {
-            env.message("Not yet loaded")?;
-        }
+        JIEBA.add_word(word.as_str(), frequency, Some(pos.as_str()));
     }
     Ok(())
 }
@@ -63,8 +58,7 @@ fn _add_word(env: &Env, word: String, pos: String, frequency: Option<usize>) -> 
 #[defun]
 fn _cut<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Result<Vector<'e>> {
     unsafe {
-        let jieba = JIEBA.get_or_init(Jieba::new);
-        let cutted = jieba.cut(sentence.as_str(), hmm.is_some());
+        let cutted = JIEBA.cut(sentence.as_str(), hmm.is_some());
         vec_to_vector(env, cutted)
     }
 }
@@ -72,8 +66,7 @@ fn _cut<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Result<Vector
 #[defun]
 fn cut_all(env: &Env, sentence: String) -> Result<Vector> {
     unsafe {
-        let jieba = JIEBA.get_or_init(Jieba::new);
-        let cutted = jieba.cut_all(sentence.as_str());
+        let cutted = JIEBA.cut_all(sentence.as_str());
         vec_to_vector(env, cutted)
     }
 }
@@ -81,8 +74,7 @@ fn cut_all(env: &Env, sentence: String) -> Result<Vector> {
 #[defun]
 fn _cut_for_search<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Result<Vector<'e>> {
     unsafe {
-        let jieba = JIEBA.get_or_init(Jieba::new);
-        let cutted = jieba.cut_for_search(sentence.as_str(), hmm.is_some());
+        let cutted = JIEBA.cut_for_search(sentence.as_str(), hmm.is_some());
         vec_to_vector(env, cutted)
     }
 }
@@ -95,8 +87,7 @@ fn _tokenize<'e>(
     hmm: Option<Value>,
 ) -> Result<Vector<'e>> {
     unsafe {
-        let jieba = JIEBA.get_or_init(Jieba::new);
-        let tokens = jieba.tokenize(
+        let tokens = JIEBA.tokenize(
             sentence.as_str(),
             match mode.as_str() {
                 "search" => TokenizeMode::Search,
@@ -119,8 +110,7 @@ fn _tokenize<'e>(
 #[defun]
 fn _tag<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Result<Vector<'e>> {
     unsafe {
-        let jieba = JIEBA.get_or_init(Jieba::new);
-        let tagged = jieba.tag(sentence.as_str(), hmm.is_some());
+        let tagged = JIEBA.tag(sentence.as_str(), hmm.is_some());
 
         let vector = env.make_vector(tagged.len(), ())?;
         for (i, tag) in tagged.iter().enumerate() {
@@ -144,12 +134,7 @@ fn internal_extract(sentence: String, n: u32, allowed_pos: Option<String>) -> Ve
                 .collect()
         };
 
-        let keyword_extractor = TFIDF_INSTANCE.get_or_init(|| {
-            let jieba = JIEBA.get_or_init(Jieba::new);
-            TFIDF::new_with_jieba(jieba)
-        });
-
-        let tags = keyword_extractor.extract_tags(sentence.as_str(), n as usize, allowed_pos);
+        let tags = TFIDF_INSTANCE.extract_tags(sentence.as_str(), n as usize, allowed_pos);
 
         tags
     }
@@ -189,25 +174,17 @@ fn _extract_keywords(
 }
 
 #[defun]
-fn tfidf_add_stop_word(env: &Env, word: String) -> Result<()> {
+fn tfidf_add_stop_word(word: String) -> Result<()> {
     unsafe {
-        if let Some(tfidf) = TFIDF_INSTANCE.get_mut() {
-            tfidf.add_stop_word(word);
-        } else {
-            env.message("TFIDF is not yet loaded")?;
-        }
+        TFIDF_INSTANCE.add_stop_word(word);
     }
     Ok(())
 }
 
 #[defun]
-fn tfidf_remove_stop_word(env: &Env, word: String) -> Result<()> {
+fn tfidf_remove_stop_word(word: String) -> Result<()> {
     unsafe {
-        if let Some(tfidf) = TFIDF_INSTANCE.get_mut() {
-            tfidf.remove_stop_word(word.as_str());
-        } else {
-            env.message("TFIDF is not yet loaded")?;
-        }
+        TFIDF_INSTANCE.remove_stop_word(word.as_str());
     }
     Ok(())
 }
