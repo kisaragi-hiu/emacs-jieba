@@ -1,6 +1,8 @@
 ;; -*- mode: lisp-interaction; lexical-binding: t; -*-
 
 (require 'buttercup)
+(defvar jieba-dyn-get-method)
+(setq jieba-dyn-get-method '(compile))
 (require 'jieba)
 
 (defvar test:sample-1

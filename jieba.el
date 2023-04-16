@@ -274,13 +274,16 @@ Return results in the format [(WORD . TAG) ...]."
   "Extract the top N keywords from SENTENCE.
 ALLOWED-POS is a comma-separated list of POS specifiers. If nil,
 Jieba's default is used."
-  (jieba--extract sentence n allowed-pos))
+  (append
+   (jieba--extract sentence n allowed-pos)
+   nil))
 
 (defun jieba-extract-keywords (sentence n &optional allowed-pos)
   "Extract the top N keywords from SENTENCE.
 Like `jieba-extract', but weights are discarded.
 ALLOWED-POS is a comma-separated list of POS specifiers. If nil,
 Jieba's default is used."
+  ;; Better than building the list using cons in Rust and having to reverse the order.
   (append
    (jieba--extract-keywords sentence n allowed-pos)
    nil))
