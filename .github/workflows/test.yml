@@ -1,4 +1,4 @@
-name: Make sure it builds
+name: Test
 
 on:
   push:
@@ -24,9 +24,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: Set up Rust
         run: rustup install stable
-      - name: Set up Rust targets
-        if: ${{ matrix.target }}
-        run: rustup target add ${{ matrix.target }}
       - name: Set up Emacs
         if: runner.os != 'Windows'
         uses: purcell/setup-emacs@master
@@ -47,7 +44,11 @@ jobs:
         run: |
           gci cert:\LocalMachine\Root\DAC9024F54D8F6DF94935FB1732638CA6AD77C13
           gci cert:\LocalMachine\Root\DAC9024F54D8F6DF94935FB1732638CA6AD77C13 | Remove-Item
-      - name: Setup Cask
+      - name: Set up Cask
         uses: cask/setup-cask@v1.1
+      - name: Set up Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
       - run: |
           make test

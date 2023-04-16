@@ -1,10 +1,9 @@
 .cask: Cask
 	cask install
+	touch .cask
 
 test:
-	cask install
-	cask emacs --batch -l tests/other.el
-	cask emacs --batch -l tests/require-directly.el
+	@deno run --allow-write --allow-run test.ts
 
 build:
 	cask emacs --batch --load jieba.el --eval '(jieba--dyn-build)'
