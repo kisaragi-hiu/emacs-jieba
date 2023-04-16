@@ -168,7 +168,7 @@ as the host."
   (when (getenv "jieba_target")
     (setq target (getenv "jieba_target")))
   (jieba--with-temp-dir
-    (copy-directory "." tmp-dir nil t)
+    (copy-directory "." tmp-dir nil t t)
     (let ((default-directory tmp-dir)
           (buf (pop-to-buffer (get-buffer-create "*cargo build*")))
           pipe)
