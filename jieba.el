@@ -233,17 +233,17 @@ as the host."
 
 (defun jieba-reset (&optional dict)
   "Reset the Jieba instance.
-If DICT is nil, use the default dictionary.
-If DICT is `empty', use an empty dictionary.
-Otherwise, use DICT as the dictionary. This is equivalent to
-creating an empty instance yourself and using `jieba-load' to
-load DICT into the instance."
+
+DICT determines the state of the instance after resetting:
+
+- `empty' means it's empty;
+- `big' means it uses the big dictionary, which works better for
+  Traditional Chinese;
+- other values means to use the jieba-rs default dictionary."
   (pcase dict
-    (`empty (jieba--reset-empty))
-    (`nil (jieba--reset-default))
-    (_ (progn
-         (jieba--reset-empty)
-         (jieba-load-dict dict)))))
+    (`empty (jieba--reset "empty"))
+    (`big (jieba--reset "big"))
+    (_ (jieba--reset nil))))
 
 (defun jieba-add-word (word &optional pos frequency)
   "Add WORD to the current Jieba instance's dictionary.

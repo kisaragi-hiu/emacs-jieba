@@ -8,6 +8,8 @@ use once_cell::sync::Lazy;
 
 emacs::plugin_is_GPL_compatible!();
 
+static BIG_DICT: &str = include_str!("data/dict.txt.big");
+
 static mut JIEBA: Lazy<Jieba> = Lazy::new(|| Jieba::new());
 static mut TFIDF_INSTANCE: Lazy<TFIDF> = Lazy::new(|| unsafe { TFIDF::new_with_jieba(&JIEBA) });
 
@@ -26,20 +28,35 @@ fn init(_env: &Env) -> Result<()> {
     Ok(())
 }
 
-/// Reset the Jieba instance to the default dictionary.
+/// Internal reset helper.
+/// DICT:
+/// - "empty": reset to an empty dict
+/// - "big": reset to Jieba's dict.txt.big, which works better with traditional chinese
+/// - nil: reset to the default dict
 #[defun]
-fn _reset_default() -> Result<()> {
-    unsafe {
-        JIEBA = Lazy::new(|| Jieba::new());
-    }
-    Ok(())
-}
-
-#[defun]
-fn _reset_empty() -> Result<()> {
-    unsafe {
-        JIEBA = Lazy::new(|| Jieba::empty());
-    }
+fn _reset(dict: Option<String>) -> Result<()> {
+    if let Some(dict) = dict {
+        match dict.as_str() {
+            "empty" => unsafe {
+                JIEBA = Lazy::new(|| Jieba::empty());
+            },
+            "big" => unsafe {
+                JIEBA = Lazy::new(|| {
+                    let mut instance = Jieba::empty();
+                    let mut big_dict = BufReader::new(BIG_DICT.as_bytes());
+                    instance.load_dict(&mut big_dict).unwrap();
+                    instance
+                });
+            },
+            _ => unsafe {
+                JIEBA = Lazy::new(|| Jieba::new());
+            },
+        }
+    } else {
+        unsafe {
+            JIEBA = Lazy::new(|| Jieba::new());
+        }
+    };
     Ok(())
 }
 
