@@ -8,7 +8,9 @@ test-require:
 test-library:
 	@deno run --allow-write --allow-run test.ts tests/test-jieba.el
 
-test: test-require test-library
+test: .cask
+	make test-require
+	make test-library
 
 build:
 	cask emacs --batch --load jieba.el --eval '(jieba--dyn-build)'
