@@ -4,11 +4,13 @@ Emacs Lisp bindings for [jieba-rs][jieba-rs].
 
 ## Status
 
-It works, but only the default dictionary is available.
+It works, and you can load the jieba-rs default dictionary, the original Jieba's big dictionary, or any dictionary (passed in as a string).
+
+By default the library will be automatically downloaded from GitHub Releases.
 
 If the Rust toolchain (including Cargo) is available, the library will be built automatically.
 
-I'm still figuring out how to build and release binaries for multiple platforms; auto download also isn't here yet.
+The logic to decide whether to download or to build is still flawed.
 
 ## Thanks
 
@@ -24,7 +26,7 @@ Jieba.el kind of counts, although it's more about integrating with [nodejieba](h
 
 ## Roadmap
 
-- [ ] Support `load_dict`, `with_dict` (perhaps by reading a file instead of reading a string passed from Emacs)
+- [x] Support `load_dict`, `with_dict` (perhaps by reading a file instead of reading a string passed from Emacs)
 - [ ] Support [TextRank](https://docs.rs/jieba-rs/latest/jieba_rs/struct.TextRank.html)
 - [ ] Support suggest_freq
 - [ ] Write docs
