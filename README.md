@@ -6,6 +6,8 @@ Emacs Lisp bindings for [jieba-rs][jieba-rs].
 
 It works, and you can load the jieba-rs default dictionary, the original Jieba's big dictionary, or any dictionary (passed in as a string).
 
+I've seen one segfault though.
+
 By default the library will be automatically downloaded from GitHub Releases.
 
 If the Rust toolchain (including Cargo) is available, the library will be built automatically.
