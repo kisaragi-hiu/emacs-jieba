@@ -66,7 +66,7 @@ jobs:
           gci cert:\LocalMachine\Root\DAC9024F54D8F6DF94935FB1732638CA6AD77C13
           gci cert:\LocalMachine\Root\DAC9024F54D8F6DF94935FB1732638CA6AD77C13 | Remove-Item
       - name: Set up Cask
-        uses: cask/setup-cask@v1.1
+        uses: cask/setup-cask@master
       - name: Set up Deno
         uses: denoland/setup-deno@v1
         with:
