@@ -68,4 +68,5 @@ jobs:
         with:
           deno-version: v1.x
       - run: |
+          export PATH="$HOME/.cask/bin:$PATH"
           make test
