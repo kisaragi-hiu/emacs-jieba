@@ -18,7 +18,19 @@ jobs:
           - macos-14 # this is arm64
           - ubuntu-24.04
           - windows-2022
-        emacs-version: ["25.1", "26.3", "27.2", "28.2"]
+        emacs-version: ["25.1", "26.3", "27.2", "28.2", "29.3"]
+        # purcell/setup-emacs does not provide old Emacs versions for macos 14
+        # (likely for good reason)
+        exclude:
+          - os: macos-14
+            emacs-version: "25.1"
+          - os: macos-14
+            emacs-version: "26.3"
+          - os: macos-14
+            emacs-version: "27.2"
+          - os: windows-2022
+            # TLS fails to load in this version on Windows
+            emacs-version: "25.1"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
