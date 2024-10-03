@@ -9,6 +9,10 @@ on:
       - "*.org"
       - "doc/"
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   Test:
     strategy:
