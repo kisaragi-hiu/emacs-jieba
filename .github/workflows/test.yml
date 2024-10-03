@@ -10,7 +10,7 @@ on:
       - "doc/"
 
 jobs:
-  build:
+  Test:
     strategy:
       fail-fast: false
       matrix:
