@@ -32,6 +32,9 @@ jobs:
             emacs-version: "26.3"
           - os: macos-14
             emacs-version: "27.2"
+            # For some reason this configuration seems to hang...
+          - os: macos-14
+            emacs-version: "29.3"
           # - os: windows-2022
           #   # TLS fails to load in this version on Windows
           #   emacs-version: "25.1"
