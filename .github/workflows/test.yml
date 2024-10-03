@@ -34,6 +34,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: SSH access for debug
+        uses: mxschmitt/action-tmate@v3
+        with:
+          detached: true
+          limit-access-to-actor: true
       - name: Set up Rust
         run: rustup install stable
       - name: Set up Emacs
