@@ -12,5 +12,11 @@ test: .cask
 	make test-require
 	make test-library
 
+# We need to add current path to load-path
+# because I assume jieba.el's location would be in the load-path and therefore a
+# good place for the dynamic library
 build:
-	cask emacs --batch --load jieba.el --eval '(jieba--dyn-build)'
+	cask emacs --batch \
+		-L . \
+		--eval "(setq jieba-dyn-get-method 'compile)" \
+		--load jieba.el
