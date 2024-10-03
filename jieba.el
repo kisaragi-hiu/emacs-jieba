@@ -53,14 +53,17 @@ This needs to be set before `jieba' is loaded."
 
 This needs to be set before `jieba' is loaded.
 
+This can either be a list of methods to try (the order is ignored) or a
+symbol for the method itself.
+
 The symbol `download' means to download it from a URL.
 
 The symbol `compile' means to automatically compile it with a
 local Rust toolchain."
   :group 'jieba
   :type '(set
-          (const :tag "Download from `jieba-dyn-url'" 'download)
-          (const :tag "Local compilation" 'compile)))
+          (const :tag "Download from `jieba-dyn-url'" download)
+          (const :tag "Local compilation" compile)))
 
 (defcustom jieba-dyn-url
   "https://github.com/kisaragi-hiu/emacs-jieba/releases/download/v%s/%s%s"
@@ -85,10 +88,14 @@ BODY needs to take care of deleting `tmp-dir' itself."
   "Ensure `jieba-dyn' is available by downloading it or building it."
   (let ((load-path (cons jieba-dyn-dir load-path)))
     (unless (locate-library "jieba-dyn")
-      (or (and (memq 'download jieba-dyn-get-method)
+      (or (and (if (listp jieba-dyn-get-method)
+                   (memq 'download jieba-dyn-get-method)
+                 (eq 'download jieba-dyn-get-method))
                (jieba--dyn-download
                 jieba-dyn-url))
-          (and (memq 'compile jieba-dyn-get-method)
+          (and (if (listp jieba-dyn-get-method)
+                   (memq 'compile jieba-dyn-get-method)
+                 (eq 'compile jieba-dyn-get-method))
                (jieba--dyn-build)))
       ;; The library should be available now. If not, signal.
       (unless (locate-library "jieba-dyn")
