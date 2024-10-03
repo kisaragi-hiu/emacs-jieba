@@ -77,7 +77,7 @@ jobs:
     runs-on: ubuntu-24.04
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Download binaries
         uses: actions/download-artifact@v4
         with:
@@ -85,7 +85,7 @@ jobs:
           merge-multiple: true
       - run: ls -R
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           draft: true
           generate_release_notes: true
