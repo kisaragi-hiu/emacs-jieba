@@ -220,7 +220,7 @@ as the host."
                        (when json
                          (let-alist json
                            (when (and (equal .reason "compiler-artifact")
-                                      (equal .target.name "emacs-jieba"))
+                                      (equal .target.name "emacs_jieba"))
                              (setq cargo-output-file (elt .filenames 0))))))
                      (delete-region (point-min) (point))))
                  (when cargo-output-file
