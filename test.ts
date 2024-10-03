@@ -11,7 +11,7 @@ async function test(file: string, keep?: boolean) {
     }
   }
   const process = Deno.run({
-    cmd: ["cask", "emacs", "--batch", "-l", file],
+    cmd: ["cask", "emacs", "--batch", "-L", ".", "-l", file],
   });
   const status = await process.status();
   if (status.success) {

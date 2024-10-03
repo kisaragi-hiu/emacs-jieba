@@ -3,10 +3,10 @@
 	touch .cask
 
 test-require:
-	@deno run --allow-write --allow-run test.ts
+	@deno run --allow-write --allow-run --allow-env test.ts
 
-test-library:
-	@deno run --allow-write --allow-run test.ts tests/test-jieba.el
+test-library: build
+	@deno run --allow-write --allow-run --allow-env test.ts tests/test-jieba.el
 
 test: .cask
 	make test-require
