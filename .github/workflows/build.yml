@@ -12,7 +12,7 @@ on:
 jobs:
   Build:
     name: Build for ${{ matrix.target }}
-    runs-on: ${{ matrix.os || 'ubuntu-22.04' }}
+    runs-on: ${{ matrix.os || 'ubuntu-24.04' }}
     strategy:
       fail-fast: false
       matrix:
@@ -21,14 +21,16 @@ jobs:
           - x86_64-unknown-linux-gnu
           - x86_64-pc-windows-gnu
         include:
-          - os: macos-11
+          - os: macos-14
             target: aarch64-apple-darwin
-          - os: macos-11
+          - os: macos-14
+            # This is cross-compilation since the macos-14 image is arm64
+            # we shouldn't have to care, though
             target: x86_64-apple-darwin
     env:
       TARGET: ${{ matrix.target }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Rust
         run: |
           rustup install stable
@@ -61,11 +63,10 @@ jobs:
               renamer --path-element name \
                 -f "/.*/" -r "$TARGET" \
                 '{}' ';'
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
-          # An artifact is like a bucket, and this is how you upload multiple files from multiple
-          # jobs into the same artifact (using the same name).
-          name: artifact
+          # v4 can no longer upload multiple times into the same bucket
+          name: artifact-${{ matrix.runs-on }}
           path: |
             target/${{ matrix.target }}/release/*.so
             target/${{ matrix.target }}/release/*.dylib
@@ -73,14 +74,15 @@ jobs:
 
   Release:
     needs: Build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - uses: actions/checkout@v3
       - name: Download binaries
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: artifact
+          pattern: artifact-*
+          merge-multiple: true
       - run: ls -R
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
