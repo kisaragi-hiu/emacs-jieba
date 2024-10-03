@@ -17,12 +17,7 @@ fn jieba() -> &'static RwLock<Jieba> {
 
 fn tfidf() -> &'static RwLock<TfIdf> {
     static TFIDF_INSTANCE: OnceLock<RwLock<TfIdf>> = OnceLock::new();
-    TFIDF_INSTANCE.get_or_init(|| {
-        RwLock::new(TfIdf::new(
-            None::<&mut std::io::Empty>,
-            KeywordExtractConfig::default(),
-        ))
-    })
+    TFIDF_INSTANCE.get_or_init(|| RwLock::new(TfIdf::default()))
 }
 
 // Copied from emacs-tree-sitter
