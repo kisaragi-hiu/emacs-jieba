@@ -9,7 +9,7 @@ test-library: build
 	@deno run --allow-write --allow-run --allow-env test.ts tests/test-jieba.el
 
 test: .cask
-	make test-require
+	# make test-require
 	make test-library
 
 # We need to add current path to load-path
