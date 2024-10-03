@@ -3,18 +3,32 @@
 use std::io::BufReader;
 
 use emacs::{defun, Env, IntoLisp, Result, Value, Vector};
-use jieba_rs::{Jieba, Keyword, KeywordExtract, TokenizeMode, TFIDF};
-use once_cell::sync::Lazy;
+use jieba_rs::{Jieba, Keyword, KeywordExtract, KeywordExtractConfig, TfIdf, TokenizeMode};
+use std::sync::{OnceLock, RwLock};
 
 emacs::plugin_is_GPL_compatible!();
 
 static BIG_DICT: &str = include_str!("data/dict.txt.big");
 
-static mut JIEBA: Lazy<Jieba> = Lazy::new(|| Jieba::new());
-static mut TFIDF_INSTANCE: Lazy<TFIDF> = Lazy::new(|| unsafe { TFIDF::new_with_jieba(&JIEBA) });
+fn jieba() -> &'static RwLock<Jieba> {
+    static JIEBA: OnceLock<RwLock<Jieba>> = OnceLock::new();
+    JIEBA.get_or_init(|| RwLock::new(Jieba::new()))
+}
 
-// From emacs-tree-sitter
+fn tfidf() -> &'static RwLock<TfIdf> {
+    static TFIDF_INSTANCE: OnceLock<RwLock<TfIdf>> = OnceLock::new();
+    TFIDF_INSTANCE.get_or_init(|| {
+        RwLock::new(TfIdf::new(
+            None::<&mut std::io::Empty>,
+            KeywordExtractConfig::default(),
+        ))
+    })
+}
+
+// Copied from emacs-tree-sitter
 // https://github.com/emacs-tree-sitter/elisp-tree-sitter/blob/master/core/src/query.rs#L13
+// Convert a Vec<T> into an Emacs vector. Members of the Vec<T> must be convertable into Lisp types
+// (ie. satisfies IntoLisp).
 fn vec_to_vector<'e, T: IntoLisp<'e>>(env: &'e Env, vec: Vec<T>) -> Result<Vector<'e>> {
     let vector = env.make_vector(vec.len(), ())?;
     for (i, v) in vec.into_iter().enumerate() {
@@ -37,25 +51,25 @@ fn init(_env: &Env) -> Result<()> {
 fn _reset(dict: Option<String>) -> Result<()> {
     if let Some(dict) = dict {
         match dict.as_str() {
-            "empty" => unsafe {
-                JIEBA = Lazy::new(|| Jieba::empty());
-            },
-            "big" => unsafe {
-                JIEBA = Lazy::new(|| {
-                    let mut instance = Jieba::empty();
-                    let mut big_dict = BufReader::new(BIG_DICT.as_bytes());
-                    instance.load_dict(&mut big_dict).unwrap();
-                    instance
-                });
-            },
-            _ => unsafe {
-                JIEBA = Lazy::new(|| Jieba::new());
-            },
+            "empty" => {
+                let mut w = jieba().write().unwrap();
+                *w = Jieba::empty();
+            }
+            "big" => {
+                let mut w = jieba().write().unwrap();
+                let mut instance = Jieba::empty();
+                let mut big_dict = BufReader::new(BIG_DICT.as_bytes());
+                instance.load_dict(&mut big_dict).unwrap();
+                *w = instance;
+            }
+            _ => {
+                let mut w = jieba().write().unwrap();
+                *w = Jieba::new();
+            }
         }
     } else {
-        unsafe {
-            JIEBA = Lazy::new(|| Jieba::new());
-        }
+        let mut w = jieba().write().unwrap();
+        *w = Jieba::new();
     };
     Ok(())
 }
@@ -64,18 +78,8 @@ fn _reset(dict: Option<String>) -> Result<()> {
 #[defun]
 fn load_dict(dict: String) -> Result<()> {
     let mut buf = BufReader::new(dict.as_bytes());
-    unsafe {
-        JIEBA.load_dict(&mut buf)?;
-    }
-    Ok(())
-}
-
-/// Initialize or refresh the TFIDF instance against the current Jieba instance.
-#[defun]
-fn load_tfidf() -> Result<()> {
-    unsafe {
-        TFIDF_INSTANCE = Lazy::new(|| TFIDF::new_with_jieba(&JIEBA));
-    }
+    let mut w = jieba().write().unwrap();
+    w.load_dict(&mut buf)?;
     Ok(())
 }
 
@@ -84,35 +88,31 @@ fn load_tfidf() -> Result<()> {
 /// Add WORD, its FREQUENCY, and its POS to the current instance of Jieba.
 #[defun]
 fn _add_word(word: String, pos: String, frequency: Option<usize>) -> Result<()> {
-    unsafe {
-        JIEBA.add_word(word.as_str(), frequency, Some(pos.as_str()));
-    }
+    let mut w = jieba().write().unwrap();
+    w.add_word(word.as_str(), frequency, Some(pos.as_str()));
     Ok(())
 }
 
 /// Cut SENTENCE into tokens.
 #[defun]
 fn _cut<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Result<Vector<'e>> {
-    unsafe {
-        let cutted = JIEBA.cut(sentence.as_str(), hmm.is_some());
-        vec_to_vector(env, cutted)
-    }
+    let r = jieba().read().unwrap();
+    let cutted = r.cut(sentence.as_str(), hmm.is_some());
+    vec_to_vector(env, cutted)
 }
 
 #[defun]
 fn cut_all(env: &Env, sentence: String) -> Result<Vector> {
-    unsafe {
-        let cutted = JIEBA.cut_all(sentence.as_str());
-        vec_to_vector(env, cutted)
-    }
+    let r = jieba().read().unwrap();
+    let cutted = r.cut_all(sentence.as_str());
+    vec_to_vector(env, cutted)
 }
 
 #[defun]
 fn _cut_for_search<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Result<Vector<'e>> {
-    unsafe {
-        let cutted = JIEBA.cut_for_search(sentence.as_str(), hmm.is_some());
-        vec_to_vector(env, cutted)
-    }
+    let r = jieba().read().unwrap();
+    let cutted = r.cut_for_search(sentence.as_str(), hmm.is_some());
+    vec_to_vector(env, cutted)
 }
 
 #[defun]
@@ -122,22 +122,21 @@ fn _tokenize<'e>(
     mode: String,
     hmm: Option<Value>,
 ) -> Result<Vector<'e>> {
-    unsafe {
-        let tokens = JIEBA.tokenize(
-            sentence.as_str(),
-            match mode.as_str() {
-                "search" => TokenizeMode::Search,
-                _ => TokenizeMode::Default,
-            },
-            hmm.is_some(),
-        );
-        let vector = env.make_vector(tokens.len(), ())?;
-        for (i, token) in tokens.into_iter().enumerate() {
-            let item = env.list((token.word, token.start, token.end))?;
-            vector.set(i, item)?;
-        }
-        Ok(vector)
+    let r = jieba().read().unwrap();
+    let tokens = r.tokenize(
+        sentence.as_str(),
+        match mode.as_str() {
+            "search" => TokenizeMode::Search,
+            _ => TokenizeMode::Default,
+        },
+        hmm.is_some(),
+    );
+    let vector = env.make_vector(tokens.len(), ())?;
+    for (i, token) in tokens.into_iter().enumerate() {
+        let item = env.list((token.word, token.start, token.end))?;
+        vector.set(i, item)?;
     }
+    Ok(vector)
 }
 
 /// Cut SENTENCE into tokens along with parts of speech information.
@@ -145,35 +144,39 @@ fn _tokenize<'e>(
 /// Return results in the format [(WORD . TAG) ...].
 #[defun]
 fn _tag<'e>(env: &'e Env, sentence: String, hmm: Option<Value>) -> Result<Vector<'e>> {
-    unsafe {
-        let tagged = JIEBA.tag(sentence.as_str(), hmm.is_some());
-
-        let vector = env.make_vector(tagged.len(), ())?;
-        for (i, tag) in tagged.iter().enumerate() {
-            let pair = env.cons(tag.word.to_owned(), tag.tag.to_owned())?;
-            vector.set(i, pair)?;
-        }
-        Ok(vector)
+    let r = jieba().read().unwrap();
+    let tagged = r.tag(sentence.as_str(), hmm.is_some());
+    let vector = env.make_vector(tagged.len(), ())?;
+    for (i, tag) in tagged.iter().enumerate() {
+        let pair = env.cons(tag.word.to_owned(), tag.tag.to_owned())?;
+        vector.set(i, pair)?;
     }
+    Ok(vector)
 }
 
+// boilerplate for extract_keywords
 fn internal_extract(sentence: String, n: u32, allowed_pos: Option<String>) -> Vec<Keyword> {
-    unsafe {
-        let allowed_pos_string = allowed_pos.unwrap_or_else(|| "".to_owned());
+    let jieba_instance = jieba().read().unwrap();
+    let tfidf_instance = tfidf().read().unwrap();
+    let allowed_pos_string = allowed_pos.unwrap_or_else(|| "".to_owned());
 
-        let allowed_pos: Vec<String> = if allowed_pos_string.is_empty() {
-            vec![]
-        } else {
-            allowed_pos_string
-                .split(',')
-                .map(|s| s.to_owned())
-                .collect()
-        };
+    let allowed_pos: Vec<String> = if allowed_pos_string.is_empty() {
+        vec![]
+    } else {
+        allowed_pos_string
+            .split(',')
+            .map(|s| s.to_owned())
+            .collect()
+    };
 
-        let tags = TFIDF_INSTANCE.extract_tags(sentence.as_str(), n as usize, allowed_pos);
+    let tags = tfidf_instance.extract_keywords(
+        &jieba_instance,
+        sentence.as_str(),
+        n as usize,
+        allowed_pos,
+    );
 
-        tags
-    }
+    tags
 }
 
 /// Extract the top N keywords from SENTENCE.
@@ -202,6 +205,8 @@ fn _extract_keywords(
     allowed_pos: Option<String>,
 ) -> Result<Vector> {
     let tags = internal_extract(sentence, n, allowed_pos);
+    // We can't use vec_to_vector here because we need `tag.keyword` in the Emacs vector, not just
+    // `tag` itself.
     let vector = env.make_vector(tags.len(), ())?;
     for (i, tag) in tags.into_iter().enumerate() {
         vector.set(i, tag.keyword)?;
@@ -209,20 +214,5 @@ fn _extract_keywords(
     Ok(vector)
 }
 
-#[defun]
-fn tfidf_add_stop_word(word: String) -> Result<()> {
-    unsafe {
-        TFIDF_INSTANCE.add_stop_word(word);
-    }
-    Ok(())
-}
-
-#[defun]
-fn tfidf_remove_stop_word(word: String) -> Result<()> {
-    unsafe {
-        TFIDF_INSTANCE.remove_stop_word(word.as_str());
-    }
-    Ok(())
-}
-
-// TODO: tfidf_set_stop_words
+// TODO: stop words? They currently can't really be held (since KeywordExtractConfigBuilder seems to
+// not really be public).
