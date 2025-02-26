@@ -108,6 +108,9 @@ BODY needs to take care of deleting `tmp-dir' itself."
     (cond
      ((equal system-configuration "x86_64-unknown-linux-gnu")
       system-configuration)
+     ;; Yes, this works
+     ((equal system-configuration "x86_64-pc-linux-gnu")
+      "x86_64-unknown-linux-gnu")
      ((equal system-configuration "aarch64-unknown-linux-android")
       "aarch64-linux-android")
      ((eq system-type 'windows-nt)
